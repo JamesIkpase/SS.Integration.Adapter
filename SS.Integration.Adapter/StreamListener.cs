@@ -602,12 +602,12 @@ namespace SS.Integration.Adapter
             }
         }
 
-        private double GetTimeDiff(Fixture fixtureDelta)
+        private int GetTimeDiff(Fixture fixtureDelta)
         {
             if (fixtureDelta == null || !fixtureDelta.TimeStamp.HasValue)
                 return 0;
 
-            return (DateTime.UtcNow - fixtureDelta.TimeStamp.Value).TotalMilliseconds;
+            return (int) (DateTime.UtcNow - fixtureDelta.TimeStamp.Value).TotalMilliseconds;
         }
 
         internal void ResourceOnStreamDisconnected(object sender, EventArgs eventArgs)
