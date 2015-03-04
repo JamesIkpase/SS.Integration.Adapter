@@ -341,6 +341,8 @@ namespace SS.Integration.Adapter
 
             SequenceOnStreamingAvailable = resource.Content.Sequence;
 
+            _logger.InfoFormat("In feed there is a sequence={0} processedSequence={1} isStreaming={2} {3}", SequenceOnStreamingAvailable, _currentSequence, IsStreaming, resource);
+
             StartStreaming();
         }
 
@@ -503,8 +505,8 @@ namespace SS.Integration.Adapter
 
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
-
-                _logger.InfoFormat("{0} stream update arrived", fixtureDelta);
+                
+                _logger.InfoFormat("{0} stream update arrived timestamp={1} receivedAfter={2}", fixtureDelta,fixtureDelta.TimeStamp,GetTimeDiff(fixtureDelta));
 
                 if (IsDisposing)
                 {
@@ -598,6 +600,14 @@ namespace SS.Integration.Adapter
                 _logger.Error(string.Format("Error processing update that arrived for {0}", _resource), ex);
                 SetErrorState();
             }
+        }
+
+        private double GetTimeDiff(Fixture fixtureDelta)
+        {
+            if (fixtureDelta == null || !fixtureDelta.TimeStamp.HasValue)
+                return 0;
+
+            return (DateTime.UtcNow - fixtureDelta.TimeStamp.Value).TotalMilliseconds;
         }
 
         internal void ResourceOnStreamDisconnected(object sender, EventArgs eventArgs)
