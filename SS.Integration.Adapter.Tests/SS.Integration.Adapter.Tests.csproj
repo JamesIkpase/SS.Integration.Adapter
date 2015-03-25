@@ -79,6 +79,7 @@
     <Compile Include="GenericComparerHelper.cs" />
     <Compile Include="MarketsFilterTests.cs" />
     <Compile Include="ModelTests.cs" />
+    <Compile Include="PriorityQueueTest.cs" />
     <Compile Include="RegressionTests.cs" />
     <Compile Include="StreamListenerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

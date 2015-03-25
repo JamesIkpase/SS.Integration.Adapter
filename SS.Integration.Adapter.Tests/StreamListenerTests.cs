@@ -340,7 +340,7 @@ namespace SS.Integration.Adapter.Tests
             connector.Verify(c => c.ProcessSnapshot(It.IsAny<Fixture>(), true), Times.Never());
         }
 
-        [Test]
+        [Ignore("Strategy changed now SL will be restarted every time there is a disconnection")]
         [Category("Adapter")]
         public void ShouldProcessSnapshopWhenReconnecting()
         {
@@ -587,11 +587,10 @@ namespace SS.Integration.Adapter.Tests
         /// event is raise while trying to connect,
         /// then the streamlistener should NOT be in a streaming state
         /// </summary>
-        [Test]
+        [Ignore("Strategy changed now SL will be restarted every time there is a disconnection")]
         [Category("StreamListener")]
         public void ShouldNotStreamOnFailedConnectingAttempt()
         {
-
             // STEP 1: prepare the stub data
             Mock<IResourceFacade> resource = new Mock<IResourceFacade>();
             Mock<IAdapterPlugin> connector = new Mock<IAdapterPlugin>();

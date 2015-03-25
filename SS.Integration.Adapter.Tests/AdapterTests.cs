@@ -18,6 +18,7 @@ using FluentAssertions;
 using NUnit.Framework;
 using System.Threading;
 using Moq;
+using SportingSolutions.Udapi.Sdk.Extensions;
 using SportingSolutions.Udapi.Sdk.Interfaces;
 using SS.Integration.Adapter.Interface;
 using SS.Integration.Adapter.Model;
@@ -292,12 +293,12 @@ namespace SS.Integration.Adapter.Tests
 
             fixtureOne.Setup(f => f.Id).Returns("1");
             fixtureOne.Setup(f => f.Sport).Returns("Football");
-            fixtureOne.Setup(f => f.GetSnapshot()).Returns(TestHelper.GetSnapshotJson());
+            fixtureOne.Setup(f => f.GetSnapshot()).Returns(new Fixture { Id = "1", MatchStatus = "10" }.ToJson());
             fixtureOne.Setup(f => f.Content).Returns(new Summary { Id = "1", Date = "23/05/2012", StartTime = "10:20", MatchStatus = (int)MatchStatus.Setup });
 
             fixtureTwo.Setup(f => f.Id).Returns("2");
             fixtureTwo.Setup(f => f.Sport).Returns("Football");
-            fixtureTwo.Setup(f => f.GetSnapshot()).Returns(string.Empty);
+            fixtureTwo.Setup(f => f.GetSnapshot()).Returns(new Fixture { Id = "2", MatchStatus = "10"}.ToJson()); 
             fixtureTwo.Setup(f => f.Content).Returns(new Summary { Id = "2", Date = "23/05/2012", StartTime = "10:30", MatchStatus = (int)MatchStatus.Setup });
 
             service.Setup(x => x.GetResources("Football")).Returns(() => new List<IResourceFacade> { fixtureOne.Object, fixtureTwo.Object });

@@ -47,7 +47,7 @@ namespace SS.Integration.Adapter
         private readonly ConcurrentDictionary<string, IListener> _listeners;
         private readonly ConcurrentDictionary<string, int> _listenerDisposingQueue;
         private readonly List<string> _sports;
-        private readonly BlockingCollection<IResourceFacade> _resourceCreationQueue;
+        private readonly PriorityBlockingQueue<IResourceFacade> _resourceCreationQueue;
         private readonly HashSet<string> _currentlyProcessedFixtures;
         private readonly CancellationTokenSource _creationQueueCancellationToken;
         private readonly Task[] _creationTasks;
@@ -75,7 +75,8 @@ namespace SS.Integration.Adapter
 
             ThreadPool.SetMinThreads(500, 500);
 
-            _resourceCreationQueue = new BlockingCollection<IResourceFacade>(new ConcurrentQueue<IResourceFacade>());
+            _resourceCreationQueue = new PriorityBlockingQueue<IResourceFacade>();
+                
             _listenerDisposingQueue = new ConcurrentDictionary<string, int>();
             _currentlyProcessedFixtures = new HashSet<string>();
             _listeners = new ConcurrentDictionary<string, IListener>();
@@ -476,22 +477,38 @@ namespace SS.Integration.Adapter
 
         private void AddResourceToCreationQueue(IResourceFacade resource)
         {
-            if (_resourceCreationQueue.Any(r => r.Id == resource.Id))
+            if (_resourceCreationQueue.Contains(r => r.Id == resource.Id))
             {
                 _logger.WarnFormat("Attempted to add a second resource with the same id to creation queue {0}",resource);
                 return;
             }
 
-            _logger.DebugFormat("Adding {0} to the creation queue ", resource);
-            _resourceCreationQueue.Add(resource);
+            _logger.DebugFormat("Adding {0} to the creation queue", resource);
+            _resourceCreationQueue.EnqueueItem(resource,GetPriority(resource));
             _logger.DebugFormat("Added {0} to the creation queue", resource);
+        }
+
+        private ProcessingPriority GetPriority(IResourceFacade resource)
+        {
+            var currentSequence = resource.Content.Sequence;
+            var fixtureState = EventState.GetFixtureState(resource.Id);
+
+            //fixture hasn't been previously processed it get's the lowest priority
+            if (fixtureState == null)
+                return ProcessingPriority.Low;
+
+            //right now if fixture reconnected Adapter could continue streaming immediately 
+            if (fixtureState.Sequence == currentSequence)
+                return ProcessingPriority.High;
+
+            return ProcessingPriority.Medium;
         }
 
         private void CreateFixture()
         {
             try
             {
-                foreach (var resource in _resourceCreationQueue.GetConsumingEnumerable(_creationQueueCancellationToken.Token))
+                foreach (var resource in _resourceCreationQueue.ConsumeItems(_creationQueueCancellationToken.Token))
                 {
                     try
                     {

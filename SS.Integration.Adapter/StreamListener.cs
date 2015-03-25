@@ -15,6 +15,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using SS.Integration.Adapter.Interface;
 using log4net;
@@ -41,6 +42,7 @@ namespace SS.Integration.Adapter
     {
         private readonly ILog _logger = LogManager.GetLogger(typeof(StreamListener).ToString());
 
+        private const int MAX_FIRST_SNAPSHOT_WAIT_IN_SECS = 1000*60*10;
         private IResourceFacade _resource;
         private readonly IAdapterPlugin _platformConnector;
         private readonly IEventState _eventState;
@@ -56,6 +58,7 @@ namespace SS.Integration.Adapter
         private bool _isFirstSnapshotProcessed;
         private bool _isProcessingFirstSnapshot;
         private bool _performingDelayedStop;
+        private ManualResetEvent _firstSnapshotSynchroniser = new ManualResetEvent(false);
 
         public StreamListener(IResourceFacade resource, IAdapterPlugin platformConnector, IEventState eventState, IStateManager stateManager, ISettings settings)
         {
@@ -452,6 +455,8 @@ namespace SS.Integration.Adapter
 
                 _logger.DebugFormat("Starting streaming for {0} - resource has sequence={1}", _resource, sequence);
                 _resource.StartStreaming();
+
+                RetrieveAndProcessSnapshotIfNeeded();
             }
             catch (Exception ex)
             {
@@ -459,7 +464,14 @@ namespace SS.Integration.Adapter
                 IsStreaming = false;
                 IsErrored = true;
 
-                _logger.Error(string.Format("An error has occured when trying to connect to stream server for {0}. Stream listener is market as errored.", _resource), ex);
+                _logger.Error(
+                    string.Format(
+                        "An error has occured when trying to connect to stream server for {0}. Stream listener is market as errored.",
+                        _resource), ex);
+            }
+            finally
+            {
+                _firstSnapshotSynchroniser.Set();
             }
         }
 
@@ -519,6 +531,8 @@ namespace SS.Integration.Adapter
 
             try
             {
+                //this should only trigger if the snapshot is still being processed on the Adapter thread when the first update arrives
+                _firstSnapshotSynchroniser.WaitOne(TimeSpan.FromSeconds(MAX_FIRST_SNAPSHOT_WAIT_IN_SECS));
 
                 var deltaMessage = streamEventArgs.Update.FromJson<StreamMessage>();
                 var fixtureDelta = deltaMessage.GetContent<Fixture>();
@@ -678,8 +692,9 @@ namespace SS.Integration.Adapter
                 _isFirstSnapshotProcessed = true;
 
                 _logger.InfoFormat("Listener for {0} is now connected to the streaming server", _resource);
+                
 
-                RetrieveAndProcessSnapshotIfNeeded();
+                //RetrieveAndProcessSnapshotIfNeeded();
             }
             catch (Exception ex)
             {
