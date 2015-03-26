@@ -100,5 +100,11 @@ namespace SS.Integration.Adapter.Model
         {
             _blockingConstruct.Dispose();
         }
+
+        public override string ToString()
+        {
+            return
+                string.Format("PriorityQueue items High: {0} \tMedium: {1} \tLow: {2}", _highPriorityQueue.Count,_mediumPriorityQueue.Count, _lowPriorityQueue.Count);
+        }
     }
 }

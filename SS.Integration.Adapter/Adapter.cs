@@ -310,7 +310,7 @@ namespace SS.Integration.Adapter
             }
             catch { }
 
-            _logger.DebugFormat("Currently adapter is streaming fixtureCount={0} and creation queue has queueSize={1} elements", currentlyConnected, queueSize);
+            _logger.DebugFormat("Currently adapter is streaming fixtureCount={0} and processing {1}", currentlyConnected, _resourceCreationQueue);
 
         }
 
